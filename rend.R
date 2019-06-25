@@ -30,6 +30,8 @@ load_pack("docopt")
 load_pack("knitr")
 load_pack("purrr")
 load_pack("stringr")
+load_pack("dplyr")
+load_pack("tidyr")
 load_pack("rmarkdown")
 
 # disabled because user script will fail if they load plyr before dplyr
@@ -41,11 +43,11 @@ load_pack("rmarkdown")
 allArgs = commandArgs(T)
 rdocsInArgs = str_detect(allArgs, ".R$")
 
-if(any(rdocsInArgs)){
+if (any(rdocsInArgs)) {
     rmdDocIndex <- min(which(rdocsInArgs))
-    rendrArgs <- allArgs[0:rmdDocIndex]
-    scriptArgs <- allArgs[-(0:rmdDocIndex)]
-}else{
+    rendrArgs <- allArgs[0 : rmdDocIndex]
+    scriptArgs <- allArgs[- (0 : rmdDocIndex)]
+}else {
     rendrArgs <- allArgs
 }
 
@@ -67,15 +69,15 @@ Options:
 --keep              Keep generated Rmd and md files
 '
 
-opts <- docopt(doc, args=rendrArgs)
+opts <- docopt(doc, args = rendrArgs)
 
 
 r_script <- opts$r_script
 keep_markdown_files <- as.logical(opts$keep)
 
 
-if(!file.exists(r_script)){
-     stop(paste("file does not exist\n", doc))
+if (! file.exists(r_script)) {
+    stop(paste("file does not exist\n", doc))
 }
 
 
@@ -87,72 +89,116 @@ if(!file.exists(r_script)){
 
 
 
-reportName=opts$out
+reportName = opts$out
 prettyReportName = str_replace(str_replace(basename(r_script), ".R$", ""), ".Rmd$", "")
-if(is.null(reportName)){
-    reportName=prettyReportName
+if (is.null(reportName)) {
+    reportName = prettyReportName
 }
 
+# Precreate figure output on windows to work around sshfs-win issues
+# if(Sys.info()["sysname"] == "Windows"){
+# if(opts$`touch-figures`){
+if (str_length(Sys.getenv("RENDR_PRECREATE_FIGURE_DIR")) > 0) {
+    # dir.create(paste0(reportName, "_files"))
+    dir.create(file.path(paste0(reportName, "_files"), "figure-html"), recursive = T)
+}
+
+
 ## either use report-name as default `results_prefix` or user-provided one
-if(!is.null(opts$resprefix)){
+if (! is.null(opts$resprefix)) {
     results_prefix = opts$resprefix
-}else{
+}else {
     results_prefix = prettyReportName
 }
 
-requiresSpinning=!str_detect(r_script, ".Rmd$")
+requiresSpinning = ! str_detect(r_script, ".Rmd$")
 
-if(requiresSpinning){
+if (requiresSpinning) {
 
-RENDR_SCRIPT_DIR=dirname(normalizePath(r_script))
+    # RENDR_SCRIPT_DIR=dirname(normalizePath(r_script))
 
-# use same name here since otherways caching does not seem to work
-#tmpScript <- tempfile(fileext=".R", tmpdir=getwd())
-tmpScript <- file.path(getwd(), paste0(".", reportName, ".R"))
-print(paste0("compiling tmp-script in ",tmpScript, "'"))
-#tmpScript <- "tt.R"
+    # use same name here since otherways caching does not seem to work
+    #tmpScript <- tempfile(fileext=".R", tmpdir=getwd())
+    tmpScript <- file.path(getwd(), paste0(".", reportName, ".R"))
+    print(paste0("compiling tmp-script in ", tmpScript, "'"))
+
+    script = readLines(r_script)
+
+    # Extract title
+    title = script %>%
+        keep(~ str_starts(.x, fixed("#' # "))) %>%
+        str_sub(5) %>%
+        str_trim()
+
+    if(length(title)==0 ) title=reportName
 
 
-## remove sheband and comment-only lines from source document
-#file.copy(r_script, tmpScript)
+    # https://www.rdocumentation.org/packages/rmarkdown/versions/1.12/topics/output_metadata
+    # output_metadata$set(
+    #  title=title
+    # )
+    # does not seem have an effect --> it rather seems that the yaml header needs to come first in the document now
+    # print(paste("ititle is ", title))
 
-#system(paste("cat ", r_script," | sed 's/_TODAY_/'$(date +\"%m-%d-%Y\")'/g' | grep -Ev '^#+$' | grep -Fv '#!/usr/bin/env Rscript' >", tmpScript))
+    ## add yaml header (will be ignored if already present
+    metadata <- c(
+    '#\' ---',
+    paste0('#\' title: "', title, '"'),
+    paste0('#\' author: "', Sys.getenv("USERNAME"), '"'),
+    '#\' date: "_TODAY_"',
+    '#\' ---',
+    ''
+    )
 
-## see /Users/brandl/Dropbox/Public/datautils/R/rendr/test/header_after_md_text_fix.sh
-# system(paste("cat ", r_script," | sed 's/_TODAY_/'$(date +\"%m-%d-%Y\")'/g' | grep -Ev '^#####+$' | sed 's/#\\x27 #/#\\x27\\n\\n#\\x27 #/g' | grep -Fv '#!/usr/bin/env Rscript' >", tmpScript))
-file.copy(r_script, tmpScript, overwrite=T)
+    script = c(metadata, script)
+
+    widthAdjust = c(
+    '',
+    '#\' ',
+    '#\' <style>',
+    '#\' .main-container {',
+    '#\' max-width: 1400px !important;',
+    '#\' }',
+    '#\' </style>',
+    ''
+    )
+
+    script = c(widthAdjust, script)
 
 
-# Extract title
-title = readLines(tmpScript) %>% keep(~str_starts(.x, fixed("#' # "))) %>% str_sub(5) %>% str_trim()
 
-# https://www.rdocumentation.org/packages/rmarkdown/versions/1.12/topics/output_metadata
-# output_metadata$set(
-#  title=title
-# )
-# does not seem have an effect --> it rather seems that the yaml header needs to come first in the document
-# print(paste("ititle is ", title))
+    #system(paste("cat ", r_script," | sed 's/_TODAY_/'$(date +\"%m-%d-%Y\")'/g' | grep -Ev '^#+$' | grep -Fv '#!/usr/bin/env Rscript' >", tmpScript))
 
-## add yaml header (will be ignored if already present
-metadata <- paste0('#\'\n\n',
-  '#\' ---\n',
-  '#\' title: "', title,'"\n',
-  '#\' author: ""\n',
-  '#\' date: ""\n',
-  '#\' ---\n\n\n',
-  '#\' \n\n',
-  '#\' <style>\n',
-  '#\' .main-container {\n',
-  '#\' max-width: 1400px !important;\n',
-  '#\' }\n',
-  '#\' </style>\n\n'
-)
+    ## remove shebang and comment-only lines from source document
+    # script = c("#!/usr/bin/env Rscript", script)
+    script = script %>% discard(~ str_detect(.x, fixed("#!/usr/bin/env")))
 
-cat("\n", file = tmpScript, append=TRUE)
-cat(metadata, file = tmpScript, append=TRUE)
+    ## remove separator lines
+    # script = c("#' _TODAY_ '", script)
+    script = script %>% discard(~ str_detect(.x, "^[#]+$"))
 
-}else{
-    tmpScript=r_script
+    # Replace _TODAY_
+    script = script %>% map(~ str_replace(.x, "_TODAY_", as.character(Sys.Date())))
+
+    ## Add markdown spacers before headers see header_after_md_text_fix.sh
+    # system(paste("cat ", r_script," | sed 's/_TODAY_/'$(date +\"%m-%d-%Y\")'/g' | grep -Ev '^#####+$' | sed 's/#\\x27 #/#\\x27\\n\\n#\\x27 #/g' | grep -Fv '#!/usr/bin/env Rscript' >", tmpScript))
+    # file.copy(r_script, tmpScript, overwrite = T)
+    script = tibble(line = script) %>%
+        mutate(prepend_line = pmap(., function(line){
+            if (str_starts(line, fixed("#' #"))) c("#' ", line) else c(line)
+        })) %>%
+        unnest(prepend_line) %>%
+        pull(prepend_line)
+
+
+    #file.copy(r_script, tmpScript)
+    writeLines(script, tmpScript)
+
+
+    # cat("\n", file = tmpScript, append = TRUE)
+    # cat(metadata, file = tmpScript, append = TRUE)
+}else {
+    tmpScript = r_script
 }
 
 
@@ -177,30 +223,30 @@ cat(metadata, file = tmpScript, append=TRUE)
 
 #https://groups.google.com/forum/#!topic/knitr/ojcnq5Nm298
 
-commandArgs <- function(trailingOnly = TRUE){ scriptArgs } ## note trailingOnly is simply ignored
+commandArgs <- function(trailingOnly = TRUE){ scriptArgs} ## note trailingOnly is simply ignored
 
 
 #system(paste("cat ", r_script," | grep -Ev '^#+$' | grep -Fv '#!/usr/bin/env Rscript' >", basename(r_script)))
 #r_script <- basename(r_script)
 
-cacheResults=opts$c
+cacheResults = opts$c
 
 ## custom title http://stackoverflow.com/questions/14124022/setting-html-meta-elements-with-knitr
 opts_chunk$set(
-    cache = cacheResults,
-    ## note that cache.dir is overridden by rmarkdown (see https://github.com/rstudio/rmarkdown/blob/c46c780d1cea4ecb744bd448dc1247923ffbf529/R/render.R#L308
-    # cache.path = file.path(getwd(), paste0(reportName, "_cache/")),
-    message= opts$m,
-    warning= opts$w
-    # out.width='120%'
+cache = cacheResults,
+## note that cache.dir is overridden by rmarkdown (see https://github.com/rstudio/rmarkdown/blob/c46c780d1cea4ecb744bd448dc1247923ffbf529/R/render.R#L308
+# cache.path = file.path(getwd(), paste0(reportName, "_cache/")),
+message = opts$m,
+warning = opts$w
+# out.width='120%'
 )
 
 
 ## alternatively we could use tmpScript <- tempfile(fileext=".R", tmpdir=".") but it would require addtional cleanup
 knitr::opts_knit$set(
-    root.dir = getwd(),
-    # https://yihui.name/knitr/options/#package_options
-    width = 130
+root.dir = getwd(),
+# https://yihui.name/knitr/options/#package_options
+width = 130
 )
 #
 # if(opts$toc){ warning("adding toc config")
@@ -210,9 +256,9 @@ knitr::opts_knit$set(
 # }
 
 
-rmarkdown::render(input=tmpScript,output_file=paste0(reportName, ".html"),
-    output_format=rmarkdown::html_document(toc = opts$toc, toc_float = opts$toc, code_folding = if(opts$e) "hide" else "show", keep_md=T, theme="united", number_sections=T),
-    output_dir=getwd())
+rmarkdown::render(input = tmpScript, output_file = paste0(reportName, ".html"),
+output_format = rmarkdown::html_document(toc = opts$toc, toc_float = opts$toc, code_folding = if (opts$e)"hide" else "show", keep_md = T, theme = "united", number_sections = T),
+output_dir = getwd())
 
 #spin(tmpScript, knit=T)
 
@@ -222,6 +268,6 @@ rmarkdown::render(input=tmpScript,output_file=paste0(reportName, ".html"),
 
 ## delete figures directory since all plots should be embedded anyway
 #echo("deleteing", paste0(str_replace(basename(r_script), ".R", ""), "_files"))
-# if(!cacheResults) unlink(paste0(reportName, "_files"), recursive=T)
+if (! cacheResults) unlink(paste0(reportName, "_files"), recursive = T)
 
-# if(requiresSpinning) unlink(tmpScript)
+if (requiresSpinning) unlink(tmpScript)

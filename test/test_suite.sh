@@ -30,6 +30,12 @@ export NL=$'\n'
 
 assert_raises "rend.R $RENDR_HOME/test/simple_report.R" 0
 
+assert_raises "rend.R $RENDR_HOME/test/section_separators.R" 0
+
+rend.R $RENDR_HOME/test/section_separators.R
+R --args $RENDR_HOME/test/section_separators.R
+
+#**{todo}** add test with additional args
 
 assert_end basic_reports
 

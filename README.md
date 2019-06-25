@@ -64,6 +64,9 @@ export RENDR_HOME="/d/projects/misc/rendr"
 
 cd ${RENDR_HOME}
 
+mkdir build
+cd ${RENDR_HOME}/build
+
 export PATH=${RENDR_HOME}:${PATH}
 
 ## double check that we're using the correct script
