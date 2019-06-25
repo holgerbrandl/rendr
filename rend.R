@@ -115,7 +115,9 @@ requiresSpinning = ! str_detect(r_script, ".Rmd$")
 
 if (requiresSpinning) {
 
-    # RENDR_SCRIPT_DIR=dirname(normalizePath(r_script))
+    ## To allow for additional resoucrces from the scripts directory to be inlined into the final documents, the directory
+    ## of the script is exposed as a variable called RENDR_SCRIPT_DIR
+    RENDR_SCRIPT_DIR=dirname(normalizePath(r_script))
 
     # use same name here since otherways caching does not seem to work
     #tmpScript <- tempfile(fileext=".R", tmpdir=getwd())

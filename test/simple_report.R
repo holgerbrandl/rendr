@@ -30,6 +30,6 @@ cat("done! ")
 ## R --args -e -c /Users/brandl/Dropbox/Public/datautils/R/rendr/test/simple_report.R --fancy_arg 3 -E "foo bar"
 ## rend.R /Users/brandl/Dropbox/Public/datautils/R/rendr/test/simple_report.R
 
-#' ![image inlineing failed](`r file.path(RENDR_SCRIPT_DIR, "inline_test.png")`)
+#' ![image inlineing failed](`r file.path(RENDR_SCRIPT_DIR, "mqtt.png")`)
 
 1+1
