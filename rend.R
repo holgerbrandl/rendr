@@ -257,14 +257,14 @@ width = 130
 
 
 rmarkdown::render(input = tmpScript, output_file = paste0(reportName, ".html"),
-output_format = rmarkdown::html_document(toc = opts$toc, toc_float = opts$toc, code_folding = if (opts$e)"hide" else "show", keep_md = T, theme = "united", number_sections = T),
+output_format = rmarkdown::html_document(toc = opts$toc, toc_float = opts$toc, code_folding = if (opts$e)"hide" else "show", keep_md = keep_markdown_files, theme = "united", number_sections = T),
 output_dir = getwd())
 
 #spin(tmpScript, knit=T)
 
-#if(!keep_markdown_files){
+# if(!keep_markdown_files){
 #    unlink(str_replace(basename(r_script), ".R", ".md"))
-#}
+# }
 
 ## delete figures directory since all plots should be embedded anyway
 #echo("deleteing", paste0(str_replace(basename(r_script), ".R", ""), "_files"))
