@@ -5,6 +5,9 @@
 - [Snippet Rendering](#snippet-rendering)
 - [Installation](#installation)
 - [How to run the unit-tests?](#how-to-run-the-unit-tests)
+- [Frequently Asked Questions](#frequently-asked-questions)
+- [How can I inline other images which are stored along with the code?](#how-can-i-inline-other-images-which-are-stored-along-with-the-code)
+- [How to adress permission denied issues when rendering to sshfs-win mountpoints?](#how-to-adress-permission-denied-issues-when-rendering-to-sshfs-win-mountpoints)
 
 Objective
 > Render R scripts and Rmd documents easily using Rmarkdown from the terminal
@@ -75,4 +78,26 @@ which rend.R
 
 ${RENDR_HOME}/test/test_suite.sh
 ```
+
+
+## Frequently Asked Questions
+
+## How can I inline other images which are stored along with the code?
+
+To reference images that are part of the code (and thus not present int the directory into which the final report is rendered), the user may use `RENDR_SCRIPT_DIR` which is provided in by `rend.R` when rendering reports.
+
+
+([complete](test/simple_report.R)) Example:
+```r
+1+1
+
+#' ![image inlineing failed](`r file.path(RENDR_SCRIPT_DIR, "mqtt.png")`)
+```
+
+## How to adress permission denied issues when rendering to sshfs-win mountpoints?
+
+Simply declare `export RENDR_PRECREATE_FIGURE_DIR=true` before running `rend.R`
+
+
+
 
