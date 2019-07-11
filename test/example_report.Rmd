@@ -1,0 +1,32 @@
+---
+title: "RMarkdown"
+author: "Me"
+date: "Friday, March 27, 2015"
+output:
+    html_document:
+    theme: null
+---
+
+```{r results="asis"}
+cat("
+<style>
+h1 {
+display: block; padding: 0.5em;
+color: red;
+}
+</style>
+")
+```
+
+
+```{r plot1, echo=FALSE, warning=FALSE, message=FALSE}
+library(ggplot2)
+1+1
+```
+
+```{r plot2, echo=FALSE, warning=FALSE, message=FALSE}
+1+1
+```
+
+
+#\ rmarkdown::render("/Users/brandl/Dropbox/projects/snippets/R/rmarkdown/test.Rmd")
