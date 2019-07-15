@@ -30,7 +30,7 @@ load_pack("docopt")
 load_pack("knitr")
 load_pack("purrr")
 load_pack("stringr")
-load_pack("dplyr")
+load_pack("dplyr", warn_conflicts=F)
 load_pack("tidyr")
 load_pack("rmarkdown")
 
