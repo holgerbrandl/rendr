@@ -196,6 +196,8 @@ if (requiresSpinning) {
     #file.copy(r_script, tmpScript)
     writeLines(script, tmpScript)
 
+    spin(tmpScript, knit=F)
+    tmpScript= file.path(getwd(), paste0(".", reportName, ".Rmd"))
 
     # cat("\n", file = tmpScript, append = TRUE)
     # cat(metadata, file = tmpScript, append = TRUE)
